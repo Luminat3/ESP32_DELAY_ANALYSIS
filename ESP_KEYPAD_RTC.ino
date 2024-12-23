@@ -26,7 +26,7 @@ const char* apiLokalEndpoint = "http://192.168.179.169:8000/api/latency";
 const char* secretKey = "thisispassword";
 
 const char* ntpServer = "pool.ntp.org";
-const long gmtOffset_sec = 3600 * 7; // Adjust for your timezone (GMT+7 in this example)
+const long gmtOffset_sec = 3600 * 7;
 const int daylightOffset_sec = 0;
 
 unsigned long lastSecondMillis = 0;
@@ -76,12 +76,17 @@ unsigned long getAccurateMilliseconds(DateTime now) {
   unsigned long elapsedMillis = currentMillis - lastSecondMillis;
 
   if (elapsedMillis >= 1000) {
-
     lastSecondMillis = currentMillis;
     elapsedMillis = 0;
   }
   
-  return elapsedMillis + rtcMillisOffset;
+  unsigned long accurateMillis = rtcMillisOffset + elapsedMillis;
+
+  if (accurateMillis >= 1000) {
+    return 999;
+  }
+
+  return accurateMillis;
 }
 
 void loop() {
@@ -129,6 +134,7 @@ void sendToAPI(const char* keyPressed, const String& dateTime) {
   if (WiFi.status() == WL_CONNECTED) {
     http.begin(apiEndpoint);
     http.addHeader("Content-Type", "application/json");
+    http.addHeader("Accept", "application/json");
 
     String payload = "{";
     payload += "\"secret_key\":\"" + String(secretKey) + "\",";
@@ -159,6 +165,7 @@ void sendToLokalAPI(const char* keyPressed, const String& dateTime) {
   if (WiFi.status() == WL_CONNECTED) {
     http.begin(apiLokalEndpoint);
     http.addHeader("Content-Type", "application/json");
+    http.addHeader("Accept", "application/json");
 
     String payload = "{";
     payload += "\"secret_key\":\"" + String(secretKey) + "\",";
