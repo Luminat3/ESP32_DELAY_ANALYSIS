@@ -22,7 +22,7 @@ Keypad keypad = Keypad(makeKeymap(keys), rowPins, colPins, ROWS, COLS);
 const char* ssid = "Luminoir";
 const char* password = "luminate";
 const char* apiEndpoint = "http://acaipad.k31.my.id/api/latency";
-const char* apiLokalEndpoint = "http://localhost:8000/api/latency";
+const char* apiLokalEndpoint = "http://192.168.179.169:8000/api/latency";
 const char* secretKey = "thisispassword";
 
 const char* ntpServer = "pool.ntp.org";
@@ -162,7 +162,7 @@ void sendToLokalAPI(const char* keyPressed, const String& dateTime) {
 
     String payload = "{";
     payload += "\"secret_key\":\"" + String(secretKey) + "\",";
-    payload += "\"location\":\"LOCAL\",";
+    payload += "\"location\":\"LOKAL\",";
     payload += "\"sent_at\":\"" + dateTime + "\",";
     payload += "\"key_pressed\":\"" + String(keyPressed) + "\"";
     payload += "}";
