@@ -65,7 +65,6 @@ void setup() {
     Serial.println("Failed to obtain NTP time");
   }
 
-  // Initialize RTC time tracking
   DateTime now = rtc.now();
   lastSecondMillis = millis();
   rtcMillisOffset = lastSecondMillis % 1000;
@@ -76,18 +75,16 @@ unsigned long getAccurateMilliseconds(DateTime now) {
   unsigned long elapsedMillis = currentMillis - lastSecondMillis;
 
   if (elapsedMillis >= 1000) {
-    lastSecondMillis = currentMillis;
-    elapsedMillis = 0;
-  }
-  
-  unsigned long accurateMillis = rtcMillisOffset + elapsedMillis;
-
-  if (accurateMillis >= 1000) {
-    return 999;
+    lastSecondMillis = currentMillis - (elapsedMillis % 1000);
+    elapsedMillis = elapsedMillis % 1000;
+    rtcMillisOffset = 0;
   }
 
-  return accurateMillis;
+  unsigned long accurateMillis = elapsedMillis + rtcMillisOffset;
+
+  return accurateMillis % 1000;
 }
+
 
 void loop() {
   char key = keypad.getKey();
