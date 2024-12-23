@@ -22,6 +22,7 @@ Keypad keypad = Keypad(makeKeymap(keys), rowPins, colPins, ROWS, COLS);
 const char* ssid = "Luminoir";
 const char* password = "luminate";
 const char* apiEndpoint = "http://acaipad.k31.my.id/api/latency";
+const char* apiLokalEndpoint = "http://localhost:8000/api/latency";
 const char* secretKey = "thisispassword";
 
 const char* ntpServer = "pool.ntp.org";
@@ -89,6 +90,8 @@ void loop() {
     
     Serial.print("Key Pressed: ");
     Serial.println(key);
+    
+    Serial.println("Sending to INTERNET API");
     DateTime now = rtc.now();
     unsigned long accurateMillis = getAccurateMilliseconds(now);
     
@@ -98,11 +101,25 @@ void loop() {
             now.hour(), now.minute(), now.second(),
             accurateMillis);
 
-    Serial.print("Formatted Date-Time: ");
+    Serial.print("Formatted Date-Time INTERNET: ");
     Serial.println(dateTime);
-
-
+    
     sendToAPI(String(key).c_str(), String(dateTime));
+    
+    Serial.println("Sending to LOKAL API");
+    DateTime nowLokal = rtc.now();
+    unsigned long accurateMillisLokal = getAccurateMilliseconds(nowLokal);
+    
+    char dateTimeLokal[30];
+    sprintf(dateTimeLokal, "%04d-%02d-%02d %02d:%02d:%02d.%03lu",
+            nowLokal.year(), nowLokal.month(), nowLokal.day(),
+            nowLokal.hour(), nowLokal.minute(), nowLokal.second(),
+            accurateMillisLokal);
+            
+    Serial.print("Formatted Date-Time LOKAL: ");
+    Serial.println(dateTimeLokal);
+    
+    sendToLokalAPI(String(key).c_str(), String(dateTimeLokal));
   }
   delay(10);
 }
@@ -120,20 +137,50 @@ void sendToAPI(const char* keyPressed, const String& dateTime) {
     payload += "\"key_pressed\":\"" + String(keyPressed) + "\"";
     payload += "}";
 
-    Serial.println("Sending to API:");
+    Serial.println("Sending to INTERNET API:");
     Serial.println(payload);
 
     int httpResponseCode = http.POST(payload);
     if (httpResponseCode > 0) {
       String response = http.getString();
-      Serial.println("Response from API:");
+      Serial.println("Response from INTERNET API:");
       Serial.println(response);
     } else {
-      Serial.print("Error sending POST: ");
+      Serial.print("Error sending POST INTERNET API: ");
       Serial.println(httpResponseCode);
     }
     http.end();
   } else {
-    Serial.println("WiFi is not connected");
+    Serial.println("WiFi is not connected (INTERNET API)");
+  }
+}
+
+void sendToLokalAPI(const char* keyPressed, const String& dateTime) {
+  if (WiFi.status() == WL_CONNECTED) {
+    http.begin(apiLokalEndpoint);
+    http.addHeader("Content-Type", "application/json");
+
+    String payload = "{";
+    payload += "\"secret_key\":\"" + String(secretKey) + "\",";
+    payload += "\"location\":\"LOCAL\",";
+    payload += "\"sent_at\":\"" + dateTime + "\",";
+    payload += "\"key_pressed\":\"" + String(keyPressed) + "\"";
+    payload += "}";
+
+    Serial.println("Sending to LOKAL API:");
+    Serial.println(payload);
+
+    int httpResponseCode = http.POST(payload);
+    if (httpResponseCode > 0) {
+      String response = http.getString();
+      Serial.println("Response from LOKAL API:");
+      Serial.println(response);
+    } else {
+      Serial.print("Error sending POST LOKAL API: ");
+      Serial.println(httpResponseCode);
+    }
+    http.end();
+  } else {
+    Serial.println("WiFi is not connected (LOKAL API)");
   }
 }
