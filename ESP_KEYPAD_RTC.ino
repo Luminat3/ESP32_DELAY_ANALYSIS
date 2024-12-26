@@ -22,7 +22,7 @@ Keypad keypad = Keypad(makeKeymap(keys), rowPins, colPins, ROWS, COLS);
 const char* ssid = "Luminoir";
 const char* password = "luminate";
 const char* apiEndpoint = "http://acaipad.k31.my.id/api/latency";
-const char* apiLokalEndpoint = "http://192.168.179.169:8000/api/latency";
+const char* apiLokalEndpoint = "http://192.168.228.234:8000/api/latency";
 const char* secretKey = "thisispassword";
 
 const char* ntpServer = "pool.ntp.org";
@@ -99,7 +99,7 @@ void loop() {
     Serial.println("Sending to INTERNET API");
     Serial.print("Formatted Date-Time INTERNET: ");
     Serial.println(dateTime);
-    sendToAPI(apiEndpoint, "INTERNET", key, dateTime);
+    sendToAPI(apiEndpoint, "INTERNET", String(key).c_str(), dateTime);
 
     DateTime nowLokal = rtc.now();
     unsigned long accurateMillisLokal = getAccurateMilliseconds(nowLokal);
@@ -109,7 +109,7 @@ void loop() {
     Serial.println("Sending to LOKAL API");
     Serial.print("Formatted Date-Time LOKAL: ");
     Serial.println(dateTimeLokal);
-    sendToAPI(apiLokalEndpoint, "LOKAL", key, dateTimeLokal);
+    sendToAPI(apiLokalEndpoint, "LOKAL", String(key).c_str(), dateTimeLokal);
   }
   delay(10);
 }
