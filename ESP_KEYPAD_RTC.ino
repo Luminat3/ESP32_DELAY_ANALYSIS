@@ -85,106 +85,77 @@ unsigned long getAccurateMilliseconds(DateTime now) {
   return accurateMillis % 1000;
 }
 
-
 void loop() {
   char key = keypad.getKey();
   if (key) {
-    
     Serial.print("Key Pressed: ");
     Serial.println(key);
-    
-    Serial.println("Sending to INTERNET API");
+
     DateTime now = rtc.now();
     unsigned long accurateMillis = getAccurateMilliseconds(now);
-    
-    char dateTime[30]; 
-    sprintf(dateTime, "%04d-%02d-%02d %02d:%02d:%02d.%03lu",
-            now.year(), now.month(), now.day(),
-            now.hour(), now.minute(), now.second(),
-            accurateMillis);
+    char dateTime[30];
+    formatDateTime(dateTime, now, accurateMillis);
 
+    Serial.println("Sending to INTERNET API");
     Serial.print("Formatted Date-Time INTERNET: ");
     Serial.println(dateTime);
-    
-    sendToAPI(String(key).c_str(), String(dateTime));
-    
-    Serial.println("Sending to LOKAL API");
+    sendToAPI(apiEndpoint, "INTERNET", key, dateTime);
+
     DateTime nowLokal = rtc.now();
     unsigned long accurateMillisLokal = getAccurateMilliseconds(nowLokal);
-    
     char dateTimeLokal[30];
-    sprintf(dateTimeLokal, "%04d-%02d-%02d %02d:%02d:%02d.%03lu",
-            nowLokal.year(), nowLokal.month(), nowLokal.day(),
-            nowLokal.hour(), nowLokal.minute(), nowLokal.second(),
-            accurateMillisLokal);
-            
+    formatDateTime(dateTimeLokal, nowLokal, accurateMillisLokal);
+
+    Serial.println("Sending to LOKAL API");
     Serial.print("Formatted Date-Time LOKAL: ");
     Serial.println(dateTimeLokal);
-    
-    sendToLokalAPI(String(key).c_str(), String(dateTimeLokal));
+    sendToAPI(apiLokalEndpoint, "LOKAL", key, dateTimeLokal);
   }
   delay(10);
 }
 
-
-void sendToAPI(const char* keyPressed, const String& dateTime) {
-  if (WiFi.status() == WL_CONNECTED) {
-    http.begin(apiEndpoint);
-    http.addHeader("Content-Type", "application/json");
-    http.addHeader("Accept", "application/json");
-
-    String payload = "{";
-    payload += "\"secret_key\":\"" + String(secretKey) + "\",";
-    payload += "\"location\":\"INTERNET\",";
-    payload += "\"sent_at\":\"" + dateTime + "\",";
-    payload += "\"key_pressed\":\"" + String(keyPressed) + "\"";
-    payload += "}";
-
-    Serial.println("Sending to INTERNET API:");
-    Serial.println(payload);
-
-    int httpResponseCode = http.POST(payload);
-    if (httpResponseCode > 0) {
-      String response = http.getString();
-      Serial.println("Response from INTERNET API:");
-      Serial.println(response);
-    } else {
-      Serial.print("Error sending POST INTERNET API: ");
-      Serial.println(httpResponseCode);
-    }
-    http.end();
-  } else {
-    Serial.println("WiFi is not connected (INTERNET API)");
-  }
+void formatDateTime(char* buffer, DateTime now, unsigned long accurateMillis) {
+  sprintf(buffer, "%04d-%02d-%02d %02d:%02d:%02d.%03lu",
+          now.year(), now.month(), now.day(),
+          now.hour(), now.minute(), now.second(),
+          accurateMillis);
 }
 
-void sendToLokalAPI(const char* keyPressed, const String& dateTime) {
+void sendToAPI(const char* endpoint, const char* location, const char* keyPressed, const String& dateTime) {
   if (WiFi.status() == WL_CONNECTED) {
-    http.begin(apiLokalEndpoint);
+    http.begin(endpoint);
     http.addHeader("Content-Type", "application/json");
     http.addHeader("Accept", "application/json");
 
     String payload = "{";
     payload += "\"secret_key\":\"" + String(secretKey) + "\",";
-    payload += "\"location\":\"LOKAL\",";
+    payload += "\"location\":\"" + String(location) + "\",";
     payload += "\"sent_at\":\"" + dateTime + "\",";
     payload += "\"key_pressed\":\"" + String(keyPressed) + "\"";
     payload += "}";
 
-    Serial.println("Sending to LOKAL API:");
+    Serial.print("Sending to ");
+    Serial.print(location);
+    Serial.println(" API:");
     Serial.println(payload);
 
     int httpResponseCode = http.POST(payload);
     if (httpResponseCode > 0) {
       String response = http.getString();
-      Serial.println("Response from LOKAL API:");
+      Serial.print("Response from ");
+      Serial.print(location);
+      Serial.println(" API:");
       Serial.println(response);
     } else {
-      Serial.print("Error sending POST LOKAL API: ");
+      Serial.print("Error sending POST ");
+      Serial.print(location);
+      Serial.print(" API: ");
       Serial.println(httpResponseCode);
     }
     http.end();
   } else {
-    Serial.println("WiFi is not connected (LOKAL API)");
+    Serial.print("WiFi is not connected (");
+    Serial.print(location);
+    Serial.println(" API)");
   }
 }
